@@ -12,8 +12,8 @@ extern "C" {
 #define SCREEN_HEIGHT	480
 
 
-// narysowanie napisu txt na powierzchni screen, zaczynaj¹c od punktu (x, y)
-// charset to bitmapa 128x128 zawieraj¹ca znaki
+// narysowanie napisu txt na powierzchni screen, zaczynajï¿½c od punktu (x, y)
+// charset to bitmapa 128x128 zawierajï¿½ca znaki
 // draw a text txt on surface screen, starting from the point (x, y)
 // charset is a 128x128 bitmap containing character images
 void DrawString(SDL_Surface *screen, int x, int y, const char *text,
@@ -40,7 +40,7 @@ void DrawString(SDL_Surface *screen, int x, int y, const char *text,
 
 
 // narysowanie na ekranie screen powierzchni sprite w punkcie (x, y)
-// (x, y) to punkt œrodka obrazka sprite na ekranie
+// (x, y) to punkt ï¿½rodka obrazka sprite na ekranie
 // draw a surface sprite on a surface screen in point (x, y)
 // (x, y) is the center of sprite on screen
 void DrawSurface(SDL_Surface *screen, SDL_Surface *sprite, int x, int y) {
@@ -62,8 +62,8 @@ void DrawPixel(SDL_Surface *surface, int x, int y, Uint32 color) {
 	};
 
 
-// rysowanie linii o d³ugoœci l w pionie (gdy dx = 0, dy = 1) 
-// b¹dŸ poziomie (gdy dx = 1, dy = 0)
+// rysowanie linii o dï¿½ugoï¿½ci l w pionie (gdy dx = 0, dy = 1)
+// bï¿½dï¿½ poziomie (gdy dx = 1, dy = 0)
 // draw a vertical (when dx = 0, dy = 1) or horizontal (when dx = 1, dy = 0) line
 void DrawLine(SDL_Surface *screen, int x, int y, int l, int dx, int dy, Uint32 color) {
 	for(int i = 0; i < l; i++) {
@@ -74,7 +74,7 @@ void DrawLine(SDL_Surface *screen, int x, int y, int l, int dx, int dy, Uint32 c
 	};
 
 
-// rysowanie prostok¹ta o d³ugoœci boków l i k
+// rysowanie prostokï¿½ta o dï¿½ugoï¿½ci bokï¿½w l i k
 // draw a rectangle of size l by k
 void DrawRectangle(SDL_Surface *screen, int x, int y, int l, int k,
                    Uint32 outlineColor, Uint32 fillColor) {
@@ -102,10 +102,10 @@ int main(int argc, char **argv) {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 
-	// okno konsoli nie jest widoczne, je¿eli chcemy zobaczyæ
+	// okno konsoli nie jest widoczne, jeï¿½eli chcemy zobaczyï¿½
 	// komunikaty wypisywane printf-em trzeba w opcjach:
 	// project -> szablon2 properties -> Linker -> System -> Subsystem
-	// zmieniæ na "Console"
+	// zmieniï¿½ na "Console"
 	// console window is not visible, to see the printf output
 	// the option:
 	// project -> szablon2 properties -> Linker -> System -> Subsystem
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 		return 1;
 		}
 
-	// tryb pe³noekranowy / fullscreen mode
+	// tryb peï¿½noekranowy / fullscreen mode
 //	rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
 //	                                 &window, &renderer);
 	rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
 		printf("SDL_CreateWindowAndRenderer error: %s\n", SDL_GetError());
 		return 1;
 		};
-	
+
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
 	                           SCREEN_WIDTH, SCREEN_HEIGHT);
 
 
-	// wy³¹czenie widocznoœci kursora myszy
+	// wyï¿½ï¿½czenie widocznoï¿½ci kursora myszy
 	SDL_ShowCursor(SDL_DISABLE);
 
 	// wczytanie obrazka cs8x8.bmp
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
 		t2 = SDL_GetTicks();
 
 		// w tym momencie t2-t1 to czas w milisekundach,
-		// jaki uplyna³ od ostatniego narysowania ekranu
+		// jaki uplynaï¿½ od ostatniego narysowania ekranu
 		// delta to ten sam czas w sekundach
 		// here t2-t1 is the time in milliseconds since
 		// the last screen was drawn
@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
 		SDL_RenderCopy(renderer, scrtex, NULL, NULL);
 		SDL_RenderPresent(renderer);
 
-		// obs³uga zdarzeñ (o ile jakieœ zasz³y) / handling of events (if there were any)
+		// obsï¿½uga zdarzeï¿½ (o ile jakieï¿½ zaszï¿½y) / handling of events (if there were any)
 		while(SDL_PollEvent(&event)) {
 			switch(event.type) {
 				case SDL_KEYDOWN:

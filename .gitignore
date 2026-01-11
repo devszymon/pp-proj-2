@@ -1,2 +1,69 @@
 .gitignore
 /.vs
+# Ignore common temporary and OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Visual Studio / MSBuild user and workspace files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio build folders
+Debug/
+Release/
+x64/
+
+# CMake / generic build folders
+build/
+cmake-build-*/
+out/
+
+# Compiled object files and temporary object caches
+*.obj
+*.o
+*.lo
+*.pch
+*.gch
+
+# Compiled binaries and libraries (build outputs)
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.ilk
+
+# Archive files (object libs) - uncomment if you want to ignore all .lib/.a files
+# Note: some projects include prebuilt .lib/.a in repo intentionally. Keep them tracked unless
+# you want to ignore them globally.
+# *.lib
+# *.a
+
+# Debugging and profiling files
+*.dSYM/
+*.prof
+*.trace
+
+# Editor temporary files
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Logs and other runtime files
+*.log
+npm-debug.log*
+
+# Other
+coverage/
+
+# Keep explicit files tracked even if they match patterns above (if any)
+# e.g. to ensure a checked-in lib stays in repo uncomment and modify as needed
+# !lib/special-library.a
