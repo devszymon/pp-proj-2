@@ -154,7 +154,7 @@ void DrawGameScene(SDL_Surface *screen, Player *player, int czarny, int zielony,
 	DrawRectangle(screen, 0, INFO_PANEL_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - INFO_PANEL_HEIGHT, szary, czarny);
 	
 	// Draw floor
-	DrawRectangle(screen, 0, FLOOR_Y - cameraX * 0 + INFO_PANEL_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - FLOOR_Y - INFO_PANEL_HEIGHT, brazowy, brazowy);
+	DrawRectangle(screen, 0, FLOOR_Y + INFO_PANEL_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - FLOOR_Y - INFO_PANEL_HEIGHT, brazowy, brazowy);
 	
 	// Draw player (centered in view)
 	int playerScreenX = (int)player->x - cameraX;
@@ -242,7 +242,6 @@ int main(int argc, char **argv) {
 	int niebieski = SDL_MapRGB(screen->format, 0x11, 0x11, 0xCC);
 	int szary = SDL_MapRGB(screen->format, 0x80, 0x80, 0x80);
 	int brazowy = SDL_MapRGB(screen->format, 0x8B, 0x45, 0x13);
-	int bialy = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0xFF);
 
 	t1 = SDL_GetTicks();
 
