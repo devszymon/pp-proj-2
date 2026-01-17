@@ -278,9 +278,9 @@ int main(int argc, char **argv) {
     SDL_SetColorKey(charset, true, 0x000000);
 
     // Używamy 'eti.bmp' jako gracza (zamiast player.png, bo SDL_LoadBMP nie obsługuje PNG natywnie bez SDL_image)
-    eti = SDL_LoadBMP("./eti.bmp");
+    eti = SDL_LoadBMP("./character.bmp");
     if(eti == NULL) {
-        printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+        printf("SDL_LoadBMP(character.bmp) error: %s\n", SDL_GetError());
         return 1;
     }
 
