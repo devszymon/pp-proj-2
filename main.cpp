@@ -15,11 +15,9 @@ extern "C" {
 #define SCREEN_WIDTH     640
 #define SCREEN_HEIGHT    480
 
-// Rozmiar całego poziomu (inspiracja TiledMap z LNCF)
 #define LEVEL_WIDTH      2000
 #define LEVEL_HEIGHT     480
 
-// Strefa poruszania się (Walkable Area - inspiracja Collisions z LNCF)
 #define WALK_AREA_TOP    360
 #define WALK_AREA_BOTTOM 470
 
@@ -30,35 +28,32 @@ extern "C" {
 #define COL_WHITE        0xFFFFFF
 #define COL_RED          0xFF0000
 #define COL_BLUE         0x0000FF
-#define COL_SKY          0x87CEEB  // Jasny błękit
-#define COL_GRASS        0x4CAF50  // Trawa
-#define COL_ROAD         0x555555  // Asfalt
-#define COL_PAVEMENT     0x9E9E9E  // Chodnik
+#define COL_SKY          0x87CEEB
+#define COL_GRASS        0x4CAF50
+#define COL_ROAD         0x555555
+#define COL_PAVEMENT     0x9E9E9E
 
 // =============================================================
-// STRUKTURY DANYCH (Zainspirowane GameObject/Actor z LNCF)
+// STRUKTURY DANYCH
 // =============================================================
 
-// Prosta struktura kamery (jak w Camera2D.hpp)
-struct Camera {
+struct CAMERA_T {
     double x, y;
     int w, h;
 };
 
-// Struktura gracza (uproszczona wersja Player.cpp)
-struct Player {
-    double x, y;         // Pozycja w świecie gry
+struct PLAYER_T {
+    double x, y;
     double velocityX;
     double velocityY;
-    int width, height;   // Wymiary duszka
-    int hp;              // Punkty życia (wymaganie z PDF)
+    int width, height;
+    int hp;
 };
 
-// Główny stan gry
-struct GameState {
+struct GAME_T {
     double worldTime;
-    Player player;
-    Camera camera;
+    PLAYER_T player;
+    CAMERA_T camera;
     int quit;
     bool isPaused;
 };
@@ -119,113 +114,69 @@ void DrawSurface(SDL_Surface *screen, SDL_Surface *sprite, int x, int y) {
 }
 
 // =============================================================
-// LOGIKA GRY (Zainspirowana Level_1.cpp)
+// LOGIKA GRY
 // =============================================================
 
-void InitGame(GameState *game) {
+void InitGame(GAME_T *game) {
     game->worldTime = 0;
     game->quit = 0;
     game->isPaused = false;
-
-    // Pozycja startowa gracza
     game->player.x = 100.0;
     game->player.y = 400.0;
     game->player.hp = 100;
-
-    // Kamera startowa
     game->camera.x = 0;
     game->camera.y = 0;
     game->camera.w = SCREEN_WIDTH;
     game->camera.h = SCREEN_HEIGHT;
 }
 
-void UpdatePlayer(GameState *game, double delta) {
+void UpdatePlayer(GAME_T *game, double delta) {
     const Uint8 *keyState = SDL_GetKeyboardState(NULL);
-
     game->player.velocityX = 0;
     game->player.velocityY = 0;
 
-    // Sterowanie (Wymaganie: Strzałki lub WSAD)
-    if (keyState[SDL_SCANCODE_RIGHT] || keyState[SDL_SCANCODE_D])
-        game->player.velocityX = PLAYER_SPEED;
-    if (keyState[SDL_SCANCODE_LEFT] || keyState[SDL_SCANCODE_A])
-        game->player.velocityX = -PLAYER_SPEED;
-    if (keyState[SDL_SCANCODE_UP] || keyState[SDL_SCANCODE_W])
-        game->player.velocityY = -PLAYER_SPEED;
-    if (keyState[SDL_SCANCODE_DOWN] || keyState[SDL_SCANCODE_S])
-        game->player.velocityY = PLAYER_SPEED;
+    if (keyState[SDL_SCANCODE_RIGHT] || keyState[SDL_SCANCODE_D]) game->player.velocityX = PLAYER_SPEED;
+    if (keyState[SDL_SCANCODE_LEFT] || keyState[SDL_SCANCODE_A]) game->player.velocityX = -PLAYER_SPEED;
+    if (keyState[SDL_SCANCODE_UP] || keyState[SDL_SCANCODE_W]) game->player.velocityY = -PLAYER_SPEED;
+    if (keyState[SDL_SCANCODE_DOWN] || keyState[SDL_SCANCODE_S]) game->player.velocityY = PLAYER_SPEED;
 
-    // Aplikowanie ruchu
     game->player.x += game->player.velocityX * delta;
     game->player.y += game->player.velocityY * delta;
 
-    // Ograniczenie ruchu (Clamp) - inspiracja z kodu Player.cpp / Level_1.cpp
-    // Ograniczenie poziome (cały poziom)
     if (game->player.x < 24) game->player.x = 24;
     if (game->player.x > LEVEL_WIDTH - 24) game->player.x = LEVEL_WIDTH - 24;
-
-    // Ograniczenie pionowe (strefa chodzenia - "pavement")
     if (game->player.y < WALK_AREA_TOP) game->player.y = WALK_AREA_TOP;
     if (game->player.y > WALK_AREA_BOTTOM) game->player.y = WALK_AREA_BOTTOM;
 }
 
-void UpdateCamera(GameState *game) {
-    // Kamera podąża za graczem (Centrowanie)
+void UpdateCamera(GAME_T *game) {
     game->camera.x = game->player.x - (SCREEN_WIDTH / 2);
-
-    // Ograniczenie kamery do granic poziomu (Clamping)
     if (game->camera.x < 0) game->camera.x = 0;
     if (game->camera.x > LEVEL_WIDTH - SCREEN_WIDTH) game->camera.x = LEVEL_WIDTH - SCREEN_WIDTH;
 }
 
-// Funkcja rysująca "ładne" tło proceduralnie (gdy nie mamy dużego pliku BMP tła)
-// Symuluje to, co robiłby TiledMap, ale za pomocą prostych kształtów.
 void DrawLevelBackground(SDL_Surface *screen, Camera *cam, SDL_Surface *backgroundBmp) {
-    // Kolory pomocnicze
     Uint32 skyCol = SDL_MapRGB(screen->format, 135, 206, 235);
     Uint32 grassCol = SDL_MapRGB(screen->format, 34, 139, 34);
     Uint32 roadCol = SDL_MapRGB(screen->format, 80, 80, 80);
-    Uint32 stripeCol = SDL_MapRGB(screen->format, 255, 255, 255);
     Uint32 pavementCol = SDL_MapRGB(screen->format, 160, 160, 160);
     Uint32 borderCol = SDL_MapRGB(screen->format, 0, 0, 0);
 
-    // Jeśli mamy bitmapę tła (opcjonalnie), rysujemy ją z przesunięciem
-    if (backgroundBmp != NULL) {
-        // Tu logika rysowania bmp, ale założymy rysowanie proceduralne dla pewności działania
-    }
-
-    // 1. Niebo (statyczne, ewentualnie lekki parallax)
     SDL_FillRect(screen, NULL, skyCol);
-
-    // 2. Trawa/Budynki w tle (daleki plan)
     DrawRectangle(screen, 0, 200, SCREEN_WIDTH, 150, grassCol, grassCol);
 
-    // 3. Chodnik (Walkable Area) - rysujemy go na całej szerokości poziomu, ale odejmujemy pozycję kamery
-    // Rysujemy jako duży prostokąt, który jest szerszy niż ekran
-    int floorScreenY = WALK_AREA_TOP - 20; // Trochę wyżej niż stopy gracza
+    int floorScreenY = WALK_AREA_TOP - 20;
     int floorH = SCREEN_HEIGHT - floorScreenY;
-
-    // Rysujemy podłogę (strefę gry)
-    SDL_Rect groundRect;
-    groundRect.x = 0;
-    groundRect.y = floorScreenY;
-    groundRect.w = SCREEN_WIDTH;
-    groundRect.h = floorH;
+    SDL_Rect groundRect = {0, floorScreenY, SCREEN_WIDTH, floorH};
     SDL_FillRect(screen, &groundRect, pavementCol);
 
-    // 4. Detale podłoża, żeby widać było ruch (pasy, krawężniki)
-    // Rysujemy linie co 100 pikseli w świecie gry
     for (int ix = 0; ix < LEVEL_WIDTH; ix += 100) {
         int screenX = ix - (int)cam->x;
         if (screenX >= -10 && screenX < SCREEN_WIDTH) {
-            // Linia pionowa na chodniku (dylatacja płyt)
             DrawLine(screen, screenX, floorScreenY, floorH, 0, 1, roadCol);
         }
     }
-
-    // Krawężnik górny
     DrawLine(screen, 0, floorScreenY, SCREEN_WIDTH, 1, 0, borderCol);
-    // Krawężnik dolny
     DrawLine(screen, 0, SCREEN_HEIGHT - 10, SCREEN_WIDTH, 1, 0, borderCol);
 }
 
@@ -245,13 +196,11 @@ int main(int argc, char **argv) {
     SDL_Window *window;
     SDL_Renderer *renderer;
 
-    // Inicjalizacja SDL
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         printf("SDL_Init error: %s\n", SDL_GetError());
         return 1;
     }
 
-    // Tworzenie okna i renderera
     rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
     if(rc != 0) {
         SDL_Quit();
@@ -262,7 +211,7 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_SetWindowTitle(window, "Projekt 2 - Beat'em Up (Inspired by LNCF)");
+    SDL_SetWindowTitle(window, "Projekt 2 - Beat'em Up");
 
     screen = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     scrtex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -277,68 +226,60 @@ int main(int argc, char **argv) {
     }
     SDL_SetColorKey(charset, true, 0x000000);
 
-    // Używamy 'eti.bmp' jako gracza (zamiast player.png, bo SDL_LoadBMP nie obsługuje PNG natywnie bez SDL_image)
+    // Ładowanie gracza
     eti = SDL_LoadBMP("./character.bmp");
     if(eti == NULL) {
         printf("SDL_LoadBMP(character.bmp) error: %s\n", SDL_GetError());
         return 1;
     }
 
-    // Inicjalizacja stanu gry
-    GameState game;
+    GAME_T game;
     InitGame(&game);
     game.player.width = eti->w;
     game.player.height = eti->h;
 
-    // Kolory interfejsu
     Uint32 red = SDL_MapRGB(screen->format, 0xFF, 0x00, 0x00);
     Uint32 blue = SDL_MapRGB(screen->format, 0x11, 0x11, 0xCC);
-
     char text[128];
+
     t1 = SDL_GetTicks();
 
-    // Pętla główna
     while(!game.quit) {
         t2 = SDL_GetTicks();
         delta = (t2 - t1) * 0.001;
         t1 = t2;
-
         game.worldTime += delta;
 
-        // --- LOGIKA ---
         UpdatePlayer(&game, delta);
         UpdateCamera(&game);
 
-        // --- RYSOWANIE ---
-
-        // 1. Tło poziomu (zamiast czyszczenia na czarno)
+        // 1. Tło
         DrawLevelBackground(screen, &game.camera, NULL);
 
-        // 2. Gracz (przeliczony względem kamery)
-        // W LNCF: x - camera->x
+        // 2. Gracz
         DrawSurface(screen, eti,
                     (int)(game.player.x - game.camera.x),
                     (int)(game.player.y));
 
-        // 3. UI (Interfejs - Wymaganie 4 i G)
-        // Pasek życia
-        DrawRectangle(screen, 10, 10, 104, 14, COL_WHITE, COL_BLACK);
-        DrawRectangle(screen, 12, 12, game.player.hp, 10, COL_RED, COL_RED);
+        // 3. UI (MENU GÓRNE)
+        // Rysujemy tło menu na samej górze
+        DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, red, COL_BLACK);
 
-        // Teksty informacyjne
-        DrawRectangle(screen, 4, SCREEN_HEIGHT - 40, SCREEN_WIDTH - 8, 36, red, blue);
+        // Pasek życia (współrzędne dobrane do paska górnego)
+        // DrawRectangle(screen, 10, 10, 104, 14, COL_WHITE, COL_BLACK);
+        // DrawRectangle(screen, 12, 12, game.player.hp, 10, COL_RED, COL_RED);
+
+        // Informacje (przesunięte w dół aby pasowały do menu)
         sprintf(text, "Czas: %.1lf s | Pos: %.0f, %.0f | Cam: %.0f", game.worldTime, game.player.x, game.player.y, game.camera.x);
-        DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, SCREEN_HEIGHT - 34, text, charset);
+        DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 
         sprintf(text, "WSAD/Strzalki - Ruch | N - Nowa Gra | Esc - Wyjscie");
-        DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, SCREEN_HEIGHT - 18, text, charset);
+        DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 
-        // Odświeżenie ekranu
         SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
         SDL_RenderCopy(renderer, scrtex, NULL, NULL);
         SDL_RenderPresent(renderer);
 
-        // Obsługa zdarzeń
         while(SDL_PollEvent(&event)) {
             switch(event.type) {
                 case SDL_KEYDOWN:
@@ -352,7 +293,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    // Sprzątanie
     SDL_FreeSurface(charset);
     SDL_FreeSurface(eti);
     SDL_FreeSurface(screen);
