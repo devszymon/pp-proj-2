@@ -9,33 +9,21 @@ extern "C" {
 }
 
 // =============================================================
-// KONFIGURACJA GRY I STAŁE
+// STAŁE I STRUKTURY
 // =============================================================
 
 #define SCREEN_WIDTH     640
 #define SCREEN_HEIGHT    480
-
 #define LEVEL_WIDTH      2000
 #define LEVEL_HEIGHT     480
-
 #define WALK_AREA_TOP    360
 #define WALK_AREA_BOTTOM 470
-
 #define PLAYER_SPEED     350.0
 
-// Kolory (Hex)
 #define COL_BLACK        0x000000
 #define COL_WHITE        0xFFFFFF
 #define COL_RED          0xFF0000
 #define COL_BLUE         0x0000FF
-#define COL_SKY          0x87CEEB
-#define COL_GRASS        0x4CAF50
-#define COL_ROAD         0x555555
-#define COL_PAVEMENT     0x9E9E9E
-
-// =============================================================
-// STRUKTURY DANYCH
-// =============================================================
 
 struct CAMERA_T {
     double x, y;
@@ -44,8 +32,7 @@ struct CAMERA_T {
 
 struct PLAYER_T {
     double x, y;
-    double velocityX;
-    double velocityY;
+    double velocityX, velocityY;
     int width, height;
     int hp;
 };
@@ -59,7 +46,7 @@ struct GAME_T {
 };
 
 // =============================================================
-// FUNKCJE POMOCNICZE (Rysowanie)
+// GRAFIKA (FUNKCJE POMOCNICZE)
 // =============================================================
 
 void DrawPixel(SDL_Surface *surface, int x, int y, Uint32 color) {
@@ -155,7 +142,7 @@ void UpdateCamera(GAME_T *game) {
     if (game->camera.x > LEVEL_WIDTH - SCREEN_WIDTH) game->camera.x = LEVEL_WIDTH - SCREEN_WIDTH;
 }
 
-void DrawLevelBackground(SDL_Surface *screen, Camera *cam, SDL_Surface *backgroundBmp) {
+void DrawLevelBackground(SDL_Surface *screen, CAMERA_T *cam) {
     Uint32 skyCol = SDL_MapRGB(screen->format, 135, 206, 235);
     Uint32 grassCol = SDL_MapRGB(screen->format, 34, 139, 34);
     Uint32 roadCol = SDL_MapRGB(screen->format, 80, 80, 80);
@@ -172,12 +159,92 @@ void DrawLevelBackground(SDL_Surface *screen, Camera *cam, SDL_Surface *backgrou
 
     for (int ix = 0; ix < LEVEL_WIDTH; ix += 100) {
         int screenX = ix - (int)cam->x;
-        if (screenX >= -10 && screenX < SCREEN_WIDTH) {
+        if (screenX >= -10 && screenX < SCREEN_WIDTH)
             DrawLine(screen, screenX, floorScreenY, floorH, 0, 1, roadCol);
-        }
     }
     DrawLine(screen, 0, floorScreenY, SCREEN_WIDTH, 1, 0, borderCol);
     DrawLine(screen, 0, SCREEN_HEIGHT - 10, SCREEN_WIDTH, 1, 0, borderCol);
+}
+
+// =============================================================
+// ZARZĄDZANIE PAMIĘCIĄ I INICJALIZACJA
+// =============================================================
+
+int InitSDL(SDL_Window **win, SDL_Renderer **ren, SDL_Surface **scr, SDL_Texture **tex) {
+    if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+        printf("SDL_Init error: %s\n", SDL_GetError()); return 1;
+    }
+    if(SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, win, ren) != 0) {
+        SDL_Quit(); return 1;
+    }
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+    SDL_RenderSetLogicalSize(*ren, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_SetRenderDrawColor(*ren, 0, 0, 0, 255);
+    SDL_SetWindowTitle(*win, "Projekt 2 - Beat'em Up");
+    SDL_ShowCursor(SDL_DISABLE);
+    *scr = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    *tex = SDL_CreateTexture(*ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+    return 0;
+}
+
+int LoadResources(SDL_Surface **charSet, SDL_Surface **player, SDL_Surface **sun) {
+    *charSet = SDL_LoadBMP("./cs8x8.bmp");
+    if(!*charSet) return 1;
+    SDL_SetColorKey(*charSet, true, 0x000000);
+
+    *player = SDL_LoadBMP("./character.bmp");
+    if(!*player) return 1;
+
+    *sun = SDL_LoadBMP("./sun.bmp");
+    if(*sun) SDL_SetColorKey(*sun, true, 0x000000); // Tylko jeśli słońce istnieje
+
+    return 0;
+}
+
+void CleanUp(SDL_Surface *c, SDL_Surface *p, SDL_Surface *s, SDL_Surface *scr, SDL_Texture *t, SDL_Renderer *r, SDL_Window *w) {
+    if(c) SDL_FreeSurface(c);
+    if(p) SDL_FreeSurface(p);
+    if(s) SDL_FreeSurface(s);
+    SDL_FreeSurface(scr);
+    SDL_DestroyTexture(t);
+    SDL_DestroyRenderer(r);
+    SDL_DestroyWindow(w);
+    SDL_Quit();
+}
+
+void RenderScene(SDL_Surface *scr, GAME_T *g, SDL_Surface *eti, SDL_Surface *sun, SDL_Surface *chars) {
+    char text[128];
+    Uint32 red = SDL_MapRGB(scr->format, 0xFF, 0x00, 0x00);
+
+    // 1. Tło
+    DrawLevelBackground(scr, &g->camera);
+
+    // 2. Słońce
+    if (sun) DrawSurface(scr, sun, 580, 80);
+
+    // 3. Gracz
+    DrawSurface(scr, eti, (int)(g->player.x - g->camera.x), (int)g->player.y);
+
+    // 4. Menu
+    DrawRectangle(scr, 4, 4, SCREEN_WIDTH - 8, 36, red, COL_BLACK);
+
+    sprintf(text, "Czas: %.1lf s | Pos: %.0f, %.0f | Cam: %.0f",
+            g->worldTime, g->player.x, g->player.y, g->camera.x);
+    DrawString(scr, scr->w/2 - strlen(text)*4, 10, text, chars);
+
+    sprintf(text, "WSAD/Strzalki - Ruch | N - Nowa Gra | Esc - Wyjscie");
+    DrawString(scr, scr->w/2 - strlen(text)*4, 26, text, chars);
+}
+
+void HandleEvents(GAME_T *g) {
+    SDL_Event event;
+    while(SDL_PollEvent(&event)) {
+        if(event.type == SDL_KEYDOWN) {
+            if(event.key.keysym.sym == SDLK_ESCAPE) g->quit = 1;
+            else if(event.key.keysym.sym == SDLK_n) InitGame(g);
+        }
+        else if(event.type == SDL_QUIT) g->quit = 1;
+    }
 }
 
 // =============================================================
@@ -188,48 +255,14 @@ void DrawLevelBackground(SDL_Surface *screen, Camera *cam, SDL_Surface *backgrou
 extern "C"
 #endif
 int main(int argc, char **argv) {
-    int t1, t2, rc;
-    double delta;
-    SDL_Event event;
-    SDL_Surface *screen, *charset, *eti;
+    SDL_Surface *screen, *charset, *eti, *sun = NULL;
     SDL_Texture *scrtex;
     SDL_Window *window;
     SDL_Renderer *renderer;
 
-    if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-        printf("SDL_Init error: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
-    if(rc != 0) {
-        SDL_Quit();
-        printf("SDL_CreateWindowAndRenderer error: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_SetWindowTitle(window, "Projekt 2 - Beat'em Up");
-
-    screen = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-    scrtex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    SDL_ShowCursor(SDL_DISABLE);
-
-    // Ładowanie zasobów
-    charset = SDL_LoadBMP("./cs8x8.bmp");
-    if(charset == NULL) {
-        printf("SDL_LoadBMP(cs8x8.bmp) error: %s\n", SDL_GetError());
-        return 1;
-    }
-    SDL_SetColorKey(charset, true, 0x000000);
-
-    // Ładowanie gracza
-    eti = SDL_LoadBMP("./character.bmp");
-    if(eti == NULL) {
-        printf("SDL_LoadBMP(character.bmp) error: %s\n", SDL_GetError());
+    if (InitSDL(&window, &renderer, &screen, &scrtex) != 0) return 1;
+    if (LoadResources(&charset, &eti, &sun) != 0) {
+        printf("Blad ladowania cs8x8.bmp lub character.bmp\n");
         return 1;
     }
 
@@ -238,67 +271,24 @@ int main(int argc, char **argv) {
     game.player.width = eti->w;
     game.player.height = eti->h;
 
-    Uint32 red = SDL_MapRGB(screen->format, 0xFF, 0x00, 0x00);
-    Uint32 blue = SDL_MapRGB(screen->format, 0x11, 0x11, 0xCC);
-    char text[128];
-
-    t1 = SDL_GetTicks();
-
+    int t1 = SDL_GetTicks();
     while(!game.quit) {
-        t2 = SDL_GetTicks();
-        delta = (t2 - t1) * 0.001;
+        int t2 = SDL_GetTicks();
+        double delta = (t2 - t1) * 0.001;
         t1 = t2;
         game.worldTime += delta;
 
         UpdatePlayer(&game, delta);
         UpdateCamera(&game);
-
-        // 1. Tło
-        DrawLevelBackground(screen, &game.camera, NULL);
-
-        // 2. Gracz
-        DrawSurface(screen, eti,
-                    (int)(game.player.x - game.camera.x),
-                    (int)(game.player.y));
-
-        // 3. UI (MENU GÓRNE)
-        // Rysujemy tło menu na samej górze
-        DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, red, COL_BLACK);
-
-        // Pasek życia (współrzędne dobrane do paska górnego)
-        // DrawRectangle(screen, 10, 10, 104, 14, COL_WHITE, COL_BLACK);
-        // DrawRectangle(screen, 12, 12, game.player.hp, 10, COL_RED, COL_RED);
-
-        // Informacje (przesunięte w dół aby pasowały do menu)
-        sprintf(text, "Czas: %.1lf s | Pos: %.0f, %.0f | Cam: %.0f", game.worldTime, game.player.x, game.player.y, game.camera.x);
-        DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
-
-        sprintf(text, "WSAD/Strzalki - Ruch | N - Nowa Gra | Esc - Wyjscie");
-        DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+        RenderScene(screen, &game, eti, sun, charset);
 
         SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
         SDL_RenderCopy(renderer, scrtex, NULL, NULL);
         SDL_RenderPresent(renderer);
 
-        while(SDL_PollEvent(&event)) {
-            switch(event.type) {
-                case SDL_KEYDOWN:
-                    if(event.key.keysym.sym == SDLK_ESCAPE) game.quit = 1;
-                    else if(event.key.keysym.sym == SDLK_n) InitGame(&game);
-                    break;
-                case SDL_QUIT:
-                    game.quit = 1;
-                    break;
-            }
-        }
+        HandleEvents(&game);
     }
 
-    SDL_FreeSurface(charset);
-    SDL_FreeSurface(eti);
-    SDL_FreeSurface(screen);
-    SDL_DestroyTexture(scrtex);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    CleanUp(charset, eti, sun, screen, scrtex, renderer, window);
     return 0;
 }
